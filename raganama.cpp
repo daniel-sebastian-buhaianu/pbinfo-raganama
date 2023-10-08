@@ -1,4 +1,5 @@
 #include <fstream>
+#include <iostream>
 #include <cstring>
 #include <algorithm>
 
@@ -12,36 +13,39 @@ ofstream fout("raganama.out");
 
 int main()
 {
-	int C, lg, gasit, i, j;
-	char s[LGMAX_NUME+1], p[LGMAX_NUME+1];
+	int C, i, j;
+	char s[LGMAX_NUME+1];
 
+	// citesc cerinta si primul nume de fata
 	fin >> C >> s;
-
-	strcpy(p, s);
-
-	lg = strlen(p);
-
-	sort(p, p+lg);
 
 	if (C == 1)
 	{
-		gasit = 0;
+		char p[LGMAX_NUME+1];
+
+		strcpy(p, s);
+
+		int lg = strlen(p);
+		
+		// retin in p cel mai frumos nume de fata (cel mai mic dpdv lexicografic)
+		sort(p, p+lg);
 
 		do
 		{
 			if (strcmp(p, s))
 			{
 				fout << p;
-
-				gasit = 1;
+				break;
 			}
 			else
 			{
+				// generez urmatorul cel mai frumos nume de fata
+
 				for (i = lg-2; i >= 0 && p[i] >= p[i+1]; i--);
 
 				if (i < 0)
 				{
-					gasit = 1;
+					break; // am generat toate anagramele
 				}
 				else
 				{
@@ -56,88 +60,160 @@ int main()
 				}
 			}
 		}
-		while (fin >> s && !gasit);
+		while (fin >> s);
 	}
 	else
 	{
-		int nr[MAXCIF_NRMARE], nn[MAXCIF_NRMARE], nrcif, d;
+		char *c;
+		int ap[26], dfp_lg[100], dfp_ap[100], lg, d, p, aux, nr[MAXCIF_NRMARE], k, t, n, nn[MAXCIF_NRMARE];
+		
+		// n = nr. de fete din trib	
+		for (n = 1; fin >> s; n++);
 
+		// initializez vector de frecventa
+		for (i = 0; i < 26; ap[i] = 0, i++);
+		
+		// contorizez frecventa literelor dintr-o anagrama
+		for (lg = 0, c = s; *c; c++, lg++) 
+		{
+			ap[*c-'a']++;
+		}
+
+		// initializez dfp_ap si dfp_lg
+		//
+		// dfp_ap = descompunerea in factori primi a lui ap
+		// unde ap = ap[1]! * ap[2]! * ... * ap[i]!
+		//
+		// dfp_lg = descompunerea in factori primi a lui lg
+		// unde lg = 1 * 2 * 3 * ... * lg
+		for (i = 0; i < 100; i++)
+		{
+			dfp_ap[i] = dfp_lg[i] = 0;
+		}
+	
+		// calculez dfp_lg	
+		for (i = 2; i <= lg; i++)
+		{
+			aux = i;
+
+			for (d = 2; d*d <= aux; d++)
+			{
+				for (p = 0; aux % d == 0; p++, aux /= d);
+
+				if (p)
+				{
+					dfp_lg[d] += p;
+				}
+			}
+
+			if (aux > 1)
+			{
+				dfp_lg[aux]++;
+			}
+		}
+
+		// calculez dfp_ap
+		for (i = 0; i < 26; i++)
+		{
+			if (ap[i] > 1)
+			{
+				for (j = 2; j <= ap[i]; j++)
+				{
+					aux = j;
+
+					for (d = 2; d*d <= aux; d++)
+					{
+						for (p = 0; aux % d == 0; p++, aux /= d);
+
+						if (p)
+						{
+							dfp_ap[d] += p;
+						}
+					}
+
+					if (aux > 1)
+					{
+						dfp_ap[aux]++;
+					}
+				}
+			}
+		}
+		
+		// initializez numerele mari nr[] si nn[]
 		for (i = 0; i < MAXCIF_NRMARE; i++)
 		{
 			nr[i] = nn[i] = 0;
 		}
-
-		for (i = 1; fin >> s; i++);
-
-		for (j = 0; i; i /= 10, j++)
+		
+		// initializez nr cu 1
+		lg = 1, nr[0] = 1; // in acest context lg = nr cifre a lui nr[]
+		
+		// calculez nr = dfp_lg/dfp_ap (numar mare)
+		for (i = 0; i < 100; i++)
 		{
-			nn[j] = i%10;
-		}
-
-		nrcif = 1;
-
-		while (1)
-		{
-			// nr++
-			for (i = 0; nr[i] == 9 && i < nrcif; nr[i] = 0, i++);
-
-			if (i == nrcif)
+			if (dfp_lg[i] > 0)
 			{
-				nr[i] = 1, nrcif++;
-			}
-			else
-			{
-				nr[i]++;
-			}
+				dfp_lg[i] -= dfp_ap[i];
+					
+				for (j = 1; j <= dfp_lg[i]; j++)
+				{	
+					for (t = k = 0; k < lg; k++)
+					{
+						p = nr[k]*i + t;
 
-			for (i = lg-2; i >= 0 && p[i] >= p[i+1]; i--);
+						nr[k] = p % 10;
 
-			if (i < 0)
-			{
-				break;
-			}
-			else
-			{
-				for (j = lg-1; p[j] <= p[i] && j >= 1; j--);
+						t = p / 10;
+					}
 
-				swap(p[i], p[j]);
+					while (t)
+					{
+						nr[k++] = t % 10;
 
-				for (i = i+1, j = lg-1; i < j; i++, j--)
-				{
-					swap(p[i], p[j]);
+						t /= 10;
+					}
+
+					if (k > lg)
+					{
+						lg = k;
+					}
 				}
 			}
 		}
-
-		for (d = i = 0; i < nrcif; i++)
+	
+		// transform pe n in numar mare	
+		for (k = 0; n; n /= 10)
 		{
-			if (nr[i]-d < nn[i])
+			nn[k++] = n % 10;
+		}
+
+		// calculez diferenta a doua numere mari (nr-nn)
+		for (t = i = 0; i < lg; i++)
+		{
+			nr[i] = nr[i] - nn[i] - t;
+
+			if (nr[i] < 0)
 			{
-				nr[i] = nr[i]+10-nn[i]-d;
-				d = 1;
+				nr[i] += 10;
+				t = 1;
 			}
 			else
 			{
-				nr[i] = nr[i]-d-nn[i];
-				d = 0;
+				t = 0;
 			}
 		}
 
-		for (i = nrcif-1; i >= 0 && nr[i] == 0; i--);
+		// sar peste zerourile de la inceput
+		for (i = lg-1; i >= 0 && nr[i] == 0; i--);
 
-		if (i < 0)
+		// afisez rezultatul
+		for (; i >= 0; i--)
 		{
-			fout << 0;
+			fout << nr[i];
 		}
-		else
-		{
-			for (; i >= 0; i--)
-			{
-				fout << nr[i];
-			}
-		}	
+
 	}
-
+	
 	return 0;
 }
-// scor 60
+// scor 100
