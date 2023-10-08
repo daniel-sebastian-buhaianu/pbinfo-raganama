@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #define LGMAX_NUME 100
+#define MAXCIF_NRMARE 200
 
 using namespace std;
 
@@ -11,12 +12,10 @@ ofstream fout("raganama.out");
 
 int main()
 {
-	int C, lg, gasit, i, j, n, nr;
+	int C, lg, gasit, i, j;
 	char s[LGMAX_NUME+1], p[LGMAX_NUME+1];
 
-	fin >> C;
-
-	fin >> s;
+	fin >> C >> s;
 
 	strcpy(p, s);
 
@@ -61,24 +60,41 @@ int main()
 	}
 	else
 	{
-		n = 1;
+		int nr[MAXCIF_NRMARE], nn[MAXCIF_NRMARE], nrcif, d;
 
-		while (fin >> s)
+		for (i = 0; i < MAXCIF_NRMARE; i++)
 		{
-			n++;
+			nr[i] = nn[i] = 0;
 		}
-		
-		nr = 0;
 
-		while (!gasit)
+		for (i = 1; fin >> s; i++);
+
+		for (j = 0; i; i /= 10, j++)
 		{
-			nr++;
-			
+			nn[j] = i%10;
+		}
+
+		nrcif = 1;
+
+		while (1)
+		{
+			// nr++
+			for (i = 0; nr[i] == 9 && i < nrcif; nr[i] = 0, i++);
+
+			if (i == nrcif)
+			{
+				nr[i] = 1, nrcif++;
+			}
+			else
+			{
+				nr[i]++;
+			}
+
 			for (i = lg-2; i >= 0 && p[i] >= p[i+1]; i--);
 
 			if (i < 0)
 			{
-				gasit = 1;
+				break;
 			}
 			else
 			{
@@ -93,9 +109,35 @@ int main()
 			}
 		}
 
-		fout << nr-n;
+		for (d = i = 0; i < nrcif; i++)
+		{
+			if (nr[i]-d < nn[i])
+			{
+				nr[i] = nr[i]+10-nn[i]-d;
+				d = 1;
+			}
+			else
+			{
+				nr[i] = nr[i]-d-nn[i];
+				d = 0;
+			}
+		}
+
+		for (i = nrcif-1; i >= 0 && nr[i] == 0; i--);
+
+		if (i < 0)
+		{
+			fout << 0;
+		}
+		else
+		{
+			for (; i >= 0; i--)
+			{
+				fout << nr[i];
+			}
+		}	
 	}
 
 	return 0;
 }
-// scor 50
+// scor 60
